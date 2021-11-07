@@ -175,8 +175,6 @@ fun_install()
 	echo "Configuring archictecture..."
 	dpkg --add-architecture i386
 	apt update
-	echo steam steam/license note '' | debconf-set-selections
-	echo steam steam/question select "I AGREE" | debconf-set-selections
 	echo "Installing Steam..."
 	apt install -y steam
 	apt install -y\
