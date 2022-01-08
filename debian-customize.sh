@@ -23,6 +23,7 @@ flatpak_install()
 	flatpak install --system -y flathub org.gimp.GIMP
 	flatpak install --system -y flathub us.zoom.Zoom
 	flatpak install --system -y flathub org.signal.Signal
+	flatpak install --system -y flathub com.nextcloud.desktopclient.nextcloud
 }
 
 snap_install()
@@ -49,6 +50,12 @@ apt_install()
 	jq\
 	git\
 	wget\
+	pavucontrol\
+	python3-tk\
+	zenity\
+	cups\
+	pip\
+	gdb\
 	grub-customizer
 	
 	wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
@@ -73,10 +80,13 @@ laptop()
 	laptop-detect
 	if [ $? = 0 ]; then
 		echo "Laptop detected"
-		snap install auto-cpufreq #Automatically adjustes cpu frequency. Improves battery life.
-		apt install -y tlp #Improves battery life
-		snap install auto-cpufreq
+		git clone https://github.com/AdnanHodzic/auto-cpufreq.git #Install auto-cpufreq
+		cd auto-cpufreq && echo "i" | ./auto-cpufreq-installer
 		auto-cpufreq --install
+		#At least on my laptop some cpu governors are not available by default. Loading the necessary kernel modules here.
+		printf "cpufreq_conservative\ncpufreq_ondemand\ncpufreq_powersave\ncpufreq_userspace\n" > /etc/modules-load.d/cpufeq.conf
+	else
+		echo "Laptop not detected"
 	fi
 }
 
@@ -84,9 +94,10 @@ nvidia()
 {
 	apt install -y lshw
 	echo "Detecting Nvidia card..."
-	if [ $(lshw -C display | grep vendor | grep NVIDIA) ];then
+	if [ -n "$(lshw -C display | grep vendor | grep NVIDIA)" ];then
 		echo "Nvidia card detected"
 		apt install -y nvidia-driver
+		NVIDIA=true
 		echo "Nvidia proprietary driver installed"
 	else
 		echo "No NVidia card detected"
@@ -177,14 +188,20 @@ fun_install()
 	apt update
 	echo "Installing Steam..."
 	apt install -y steam
+	if [ $NVIDIA = true ]; then
+		apt install -y nvidia-driver-libs:i386
+	fi
 	apt install -y\
 	mesa-vulkan-drivers\
 	libglx-mesa0:i386\
 	mesa-vulkan-drivers:i386\
 	libgl1-mesa-dri:i386
+	echo "Installing Minecraft..."
 	wget https://launcher.mojang.com/download/Minecraft.deb
 	apt install -y ./Minecraft.deb
 	rm ./Minecraft.deb
+	echo "Installing Discord..."
+	flatpak install --system -y flathub com.discordapp.Discord
 }
 
 school_install()
@@ -193,6 +210,7 @@ school_install()
 	flatpak install --system -y flathub com.microsoft.Teams
 	flatpak install --system -y flathub org.kde.kdenlive
 	flatpak install --system -y flathub org.gnucash.GnuCash
+	flatpak install --system -y flathub org.speedcrunch.SpeedCrunch
 }
 
 sudo_add()
@@ -232,7 +250,6 @@ corefonts()
 ufw_config()
 {
 	apt install -y ufw
-	ufw reset --force
 	ufw enable
 	ufw allow 1714:1764/udp #For gsconnect
 	ufw allow 1714:1764/tcp #For gsconnect
@@ -252,7 +269,7 @@ libre_templates()
 	rm -r tmpdir
 }
 
-if [ $(whoami) != root ]; then
+if [ "$(whoami)" != root ]; then
 	print_error "This script must be run as root"
 	exit 1
 fi
@@ -309,12 +326,12 @@ apt update && apt upgrade -y
 enable_non-free
 fix_path
 apt_install
+snap_install
 laptop
 nvidia
 apt_purge
 flatpak_install
 libre_templates
-snap_install
 plymouth
 unattended_upgrades
 sudo_add
