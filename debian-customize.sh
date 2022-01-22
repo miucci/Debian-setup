@@ -209,7 +209,6 @@ school_install()
 	flatpak install --system -y flathub org.geogebra.GeoGebra
 	flatpak install --system -y flathub com.microsoft.Teams
 	flatpak install --system -y flathub org.kde.kdenlive
-	flatpak install --system -y flathub org.gnucash.GnuCash
 	flatpak install --system -y flathub org.speedcrunch.SpeedCrunch
 }
 
